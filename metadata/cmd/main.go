@@ -2,14 +2,15 @@ package main
 
 import (
 	"log"
+	"net/http"
+
 	"movieexample.com/metadata/internal/controller/metadata"
 	httphandler "movieexample.com/metadata/internal/handler/http"
 	"movieexample.com/metadata/internal/repository/memory"
-	"net/http"
 )
 
 func main() {
-	log.Println("Starting the movie metadata service")
+	log.Println("Starting the movie metadata service, listening on 8081")
 	repo := memory.New()
 	ctrl := metadata.New(repo)
 	h := httphandler.New(ctrl)

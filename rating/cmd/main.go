@@ -2,14 +2,15 @@ package main
 
 import (
 	"log"
+	"net/http"
+
 	"movieexample.com/rating/internal/controller/rating"
 	httphandler "movieexample.com/rating/internal/handler/http"
 	"movieexample.com/rating/internal/repository/memory"
-	"net/http"
 )
 
 func main() {
-	log.Println("Starting the rating service")
+	log.Println("Starting the rating service, listening on 8082")
 	repo := memory.New()
 	ctrl := rating.New(repo)
 	h := httphandler.New(ctrl)
