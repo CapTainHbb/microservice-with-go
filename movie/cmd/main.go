@@ -5,14 +5,15 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"movieexample.com/pkg/discovery"
-	"movieexample.com/pkg/discovery/consul"
 	"net/http"
 	"time"
 
+	"movieexample.com/pkg/discovery"
+	"movieexample.com/pkg/discovery/consul"
+
 	"movieexample.com/movie/internal/controller/movie"
-	metadatagateway "movieexample.com/movie/internal/gateway/metadata/http"
-	ratinggateway "movieexample.com/movie/internal/gateway/rating/http"
+	metadatagateway "movieexample.com/movie/internal/gateway/metadata/grpc"
+	ratinggateway "movieexample.com/movie/internal/gateway/rating/grpc"
 	httphandler "movieexample.com/movie/internal/handler/http"
 )
 
