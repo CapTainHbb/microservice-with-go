@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"time"
 
 	"google.golang.org/grpc"
+	"gopkg.in/yaml.v2"
 	"movieexample.com/gen"
 	"movieexample.com/pkg/discovery"
 	"movieexample.com/pkg/discovery/consul"
@@ -21,9 +22,17 @@ import (
 const serviceName = "rating"
 
 func main() {
-	var port int
-	flag.IntVar(&port, "port", 8082, "Port to listen on")
-	flag.Parse()
+
+	f, err := os.Open("base.yaml")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	var cfg serviceConfig
+	if err := yaml.NewDecoder(f).Decode(&cfg); err != nil {
+		panic(err)
+	}
 
 	registry, err := consul.NewRegistry("localhost:8500")
 	if err != nil {
@@ -31,7 +40,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	hostPort := fmt.Sprintf("localhost:%d", port)
+	hostPort := fmt.Sprintf("localhost:%v", cfg.APIConfig.Port)
 	instanceID := discovery.GenerateInstanceID(serviceName)
 
 	err = registry.Register(ctx, instanceID, serviceName, hostPort)
@@ -50,12 +59,12 @@ func main() {
 	}()
 	defer registry.Deregister(ctx, instanceID, serviceName)
 
-	log.Printf("Starting the rating service, listening on %v\n", port)
+	log.Printf("Starting the rating service, listening on %v\n", cfg.APIConfig.Port)
 	repo := memory.New()
 	ctrl := rating.New(repo)
 	h := grpchandler.New(ctrl)
 
-	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%v", port))
+	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%v", cfg.APIConfig.Port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}

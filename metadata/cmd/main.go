@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"time"
 
 	"google.golang.org/grpc"
+	"gopkg.in/yaml.v2"
 	"movieexample.com/gen"
 	"movieexample.com/pkg/discovery"
 	"movieexample.com/pkg/discovery/consul"
@@ -21,11 +22,17 @@ import (
 const serviceName = "metadata"
 
 func main() {
-	var port int
-	flag.IntVar(&port, "port", 8081, "Port to listen on")
-	flag.Parse()
+	log.Printf("Starting the movie metadata service...\n")
+	f, err := os.Open("base.yaml")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
 
-	log.Printf("Starting the movie metadata service, listening on %v\n", port)
+	var cfg serviceConfig
+	if err := yaml.NewDecoder(f).Decode(&cfg); err != nil {
+		panic(err)
+	}
 
 	registry, err := consul.NewRegistry("localhost:8500")
 	if err != nil {
@@ -35,7 +42,7 @@ func main() {
 	ctx := context.Background()
 	instanceID := discovery.GenerateInstanceID(serviceName)
 	err = registry.Register(ctx, instanceID,
-		serviceName, fmt.Sprintf("localhost:%d", port))
+		serviceName, fmt.Sprintf("localhost:%v", cfg.APIConfig.Port))
 	if err != nil {
 		panic(err)
 	}
@@ -55,7 +62,7 @@ func main() {
 	repo := memory.New()
 	ctrl := metadata.New(repo)
 	h := grpchandler.New(ctrl)
-	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%v", port))
+	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%v", cfg.APIConfig.Port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
