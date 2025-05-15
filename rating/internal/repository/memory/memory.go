@@ -2,7 +2,7 @@ package memory
 
 import (
 	"context"
-	"movieexample.com/rating/internal"
+	"movieexample.com/rating/internal/repository"
 	"movieexample.com/rating/pkg/model"
 )
 
@@ -16,11 +16,11 @@ func New() *Repository {
 
 func (r *Repository) Get(ctx context.Context, recordID model.RecordID, recordType model.RecordType) ([]model.Rating, error) {
 	if _, ok := r.data[recordType]; !ok {
-		return nil, internal.ErrNotFound
+		return nil, repository.ErrNotFound
 	}
 
 	if ratings, ok := r.data[recordType][recordID]; !ok || len(ratings) == 0 {
-		return nil, internal.ErrNotFound
+		return nil, repository.ErrNotFound
 	}
 
 	return r.data[recordType][recordID], nil

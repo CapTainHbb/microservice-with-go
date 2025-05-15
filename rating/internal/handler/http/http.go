@@ -4,17 +4,17 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
-	"movieexample.com/rating/internal/controller/rating"
+	"movieexample.com/rating/internal/controller"
 	"movieexample.com/rating/pkg/model"
 	"net/http"
 	"strconv"
 )
 
 type Handler struct {
-	ctrl *rating.Controller
+	ctrl *controller.Controller
 }
 
-func New(ctrl *rating.Controller) *Handler {
+func New(ctrl *controller.Controller) *Handler {
 	return &Handler{ctrl}
 }
 
@@ -34,7 +34,7 @@ func (h *Handler) Handle(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
 		v, err := h.ctrl.GetAggregatedRating(req.Context(), recordID, recordType)
-		if err != nil && errors.Is(err, rating.ErrNotFound) {
+		if err != nil && errors.Is(err, controller.ErrNotFound) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}

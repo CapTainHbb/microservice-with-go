@@ -4,7 +4,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"google.golang.org/grpc/reflection"
 	"log"
+	"movieexample.com/metadata/internal/repository/mysql"
 	"net"
 	"time"
 
@@ -15,7 +17,6 @@ import (
 
 	"movieexample.com/metadata/internal/controller/metadata"
 	grpchandler "movieexample.com/metadata/internal/handler/grpc"
-	"movieexample.com/metadata/internal/repository/memory"
 )
 
 const serviceName = "metadata"
@@ -52,7 +53,11 @@ func main() {
 
 	defer registry.Deregister(ctx, instanceID, serviceName)
 
-	repo := memory.New()
+	repo, err := mysql.New()
+	if err != nil {
+		panic(err)
+	}
+
 	ctrl := metadata.New(repo)
 	h := grpchandler.New(ctrl)
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%v", port))
@@ -61,6 +66,10 @@ func main() {
 	}
 
 	srv := grpc.NewServer()
+	reflection.Register(srv)
 	gen.RegisterMetadataServiceServer(srv, h)
-	srv.Serve(lis)
+	err = srv.Serve(lis)
+	if err := srv.Serve(lis); err != nil {
+		panic(err)
+	}
 }

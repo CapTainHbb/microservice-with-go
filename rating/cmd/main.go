@@ -4,7 +4,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"google.golang.org/grpc/reflection"
 	"log"
+	"movieexample.com/rating/internal/controller"
+	"movieexample.com/rating/internal/ingester/kafka"
+	"movieexample.com/rating/internal/repository/mysql"
 	"net"
 	"time"
 
@@ -13,9 +17,7 @@ import (
 	"movieexample.com/pkg/discovery"
 	"movieexample.com/pkg/discovery/consul"
 
-	"movieexample.com/rating/internal/controller/rating"
 	grpchandler "movieexample.com/rating/internal/handler/grpc"
-	"movieexample.com/rating/internal/repository/memory"
 )
 
 const serviceName = "rating"
@@ -51,8 +53,22 @@ func main() {
 	defer registry.Deregister(ctx, instanceID, serviceName)
 
 	log.Printf("Starting the rating service, listening on %v\n", port)
-	repo := memory.New()
-	ctrl := rating.New(repo)
+	repo, err := mysql.New()
+	if err != nil {
+		panic(err)
+	}
+
+	ingester, err := kafka.NewIngester("localhost", "rating", "ratings")
+	if err != nil {
+		log.Fatalf("failed to initialize ingester: %v", err)
+	}
+
+	ctrl := controller.New(repo, ingester)
+	//err = ctrl.StartIngestion(ctx)
+	//if err != nil {
+	//	log.Fatalf("failed to start ingestion: %v", err)
+	//}
+
 	h := grpchandler.New(ctrl)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%v", port))
@@ -61,6 +77,9 @@ func main() {
 	}
 
 	srv := grpc.NewServer()
+	reflection.Register(srv)
 	gen.RegisterRatingServiceServer(srv, h)
-	srv.Serve(lis)
+	if err := srv.Serve(lis); err != nil {
+		panic(err)
+	}
 }

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
-	"movieexample.com/metadata/internal"
 	"movieexample.com/metadata/internal/controller/metadata"
+	"movieexample.com/metadata/internal/repository"
 	"net/http"
 )
 
@@ -29,7 +29,7 @@ func (h *Handler) GetMetadata(w http.ResponseWriter, req *http.Request) {
 
 	ctx := req.Context()
 	m, err := h.ctrl.Get(ctx, id)
-	if err != nil && errors.Is(err, internal.ErrNotFound) {
+	if err != nil && errors.Is(err, repository.ErrNotFound) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	} else if err != nil {

@@ -2,7 +2,7 @@ package memory
 
 import (
 	"context"
-	"movieexample.com/metadata/internal"
+	"movieexample.com/metadata/internal/repository"
 	"sync"
 
 	"movieexample.com/metadata/pkg/model"
@@ -26,7 +26,7 @@ func (r *Repository) Get(_ context.Context, id string) (*model.Metadata, error) 
 
 	m, ok := r.data[id]
 	if !ok {
-		return nil, internal.ErrNotFound
+		return nil, repository.ErrNotFound
 	}
 
 	return m, nil
