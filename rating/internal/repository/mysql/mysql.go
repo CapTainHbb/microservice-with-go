@@ -2,55 +2,57 @@ package mysql
 
 import (
 	"context"
-	"database/sql"
-	_ "github.com/go-sql-driver/mysql"
+	"fmt"
+	"os"
+
+	mysqldriver "gorm.io/driver/mysql"
+	"gorm.io/gorm"
 	"movieexample.com/rating/internal/repository"
 	"movieexample.com/rating/pkg/model"
 )
 
 type Repository struct {
-	db *sql.DB
+	db *gorm.DB
 }
 
 func New() (*Repository, error) {
-	db, err := sql.Open("mysql", "root:password@tcp/movieexample")
+	mysqlUser := os.Getenv("MYSQL_USER")
+    mysqlPassword := os.Getenv("MYSQL_PASSWORD")
+	mysqlDb := os.Getenv("MYSQL_DATABASE")
+	dbUrl := os.Getenv("DATABASE_URL")
+	
+	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s", mysqlUser, mysqlPassword, dbUrl, mysqlDb)
+	db, err := gorm.Open(mysqldriver.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
+
+	db.AutoMigrate(&model.Rating{}, &model.RatingEvent{})
+
 	return &Repository{db}, nil
 }
 
 func (r *Repository) Get(ctx context.Context, recordID model.RecordID, recordType model.RecordType) ([]model.Rating, error) {
-	rows, err := r.db.QueryContext(ctx, "SELECT user_id, value FROM ratings WHERE record_id = ? AND record_type = ?",
-		recordID, recordType)
-	if err != nil {
-		return nil, err
+	var ratings []model.Rating
+	result := r.db.Where("record_id = ? AND record_type = ?", recordID, recordType, &ratings)
+	if result.Error != nil {
+		return nil, result.Error
 	}
 
-	defer rows.Close()
-	var res []model.Rating
-	for rows.Next() {
-		var userID string
-		var value int32
-		if err := rows.Scan(&userID, &value); err != nil {
-			return nil, err
-		}
-		res = append(res, model.Rating{
-			UserID: model.UserID(userID),
-			Value:  model.RatingValue(value),
-		})
-	}
-
-	if len(res) == 0 {
+	if len(ratings) == 0 {
 		return nil, repository.ErrNotFound
 	}
 
-	return res, nil
+	return ratings, nil
 }
 
 func (r *Repository) Put(ctx context.Context, recordID model.RecordID, recordType model.RecordType, rating *model.Rating) error {
-	_, err := r.db.ExecContext(ctx,
-		"INSERT INTO ratings (user_id, record_id, record_type, value) VALUES (?, ?, ?, ?)",
-		rating.UserID, recordID, recordType, rating.Value)
-	return err
+	ratingToSave := model.Rating{
+		RecordType: string(recordType),
+		RecordID: string(recordID),
+		UserID: rating.UserID,
+		Value: rating.Value,
+	}
+	result := r.db.Create(&ratingToSave)
+	return result.Error
 }

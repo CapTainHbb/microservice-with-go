@@ -1,5 +1,7 @@
 package model
 
+import "gorm.io/gorm"
+
 // RecordID defines a record id. Together with RecordType
 // identifies unique records across all types.
 type RecordID string
@@ -17,6 +19,7 @@ type UserID string
 type RatingValue int
 
 type Rating struct {
+	gorm.Model
 	RecordID   string      `json:"recordId"`
 	RecordType string      `json:"recordType"`
 	UserID     UserID      `json:"userId"`
@@ -24,6 +27,7 @@ type Rating struct {
 }
 
 type RatingEvent struct {
+	gorm.Model
 	UserID     UserID          `json:"userId"`
 	RecordID   RecordID        `json:"recordId"`
 	RecordType string          `json:"recordType"`

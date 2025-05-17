@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: global-config
+data:
+  MYSQL_DATABASE: movieexample
+  KAFKA_TOPIC: rates
+  CONSUL_HOST: consul.default.svc.cluster.local
+  DATABASE_URL: mysql-service:3306
